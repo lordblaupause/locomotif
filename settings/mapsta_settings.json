@@ -1,0 +1,1 @@
+{"100": {"header": 0, "usecols": ["lon", "lat", "biomass", "diversity"], "names": ["lon", "lat", "", "", "biomass", "diversity"], "sep": ";"}}
