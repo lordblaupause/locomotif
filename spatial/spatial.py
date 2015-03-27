@@ -3,7 +3,7 @@
 """
 
 
-def get_edges(df, margins=None, relative=True, lon='lon', lat='lat'):
+def get_edges(df, margins=None, relative=True, geometry_column='geom'):
     """
     The surrounding edge points for given scatter points of longitude and 
     latitude pairs is given. These points can be used for creating an 
@@ -13,16 +13,27 @@ def get_edges(df, margins=None, relative=True, lon='lon', lat='lat'):
     the length of each border. E.g. margin=0.1 and relative=True will enlarge 
     each border by 10%. If relative is False the marign will be interpreted as 
     absolute units in the dimension of lon and lat in the DataFrame. 
-    In case the longitude and latitude in DataFrame df are not named 'lon' and 
-    'lat', you can pass the correct names by lon and lat.
+    Note: df needs the geometries in a column called 'geom' containing 
+    osgeo.ogr.Geometry Point definitions. A different column name can be passed 
+    using geometry_column argument.
+    
+    @todo: check class and content of geom. 
+    @todo: accept column index for geometry_column
     """
-    from pandas import DataFrame
+    from pandas import DataFrame, Series
+    # get the geometry column
+    geom = getattr(df, geometry_column)    
     
     # find min and max for lon and lat
-    minlon = df[lon].min()
-    minlat = df[lat].min()
-    maxlon = df[lon].max()
-    maxlat = df[lat].max()
+    # get a lon series
+    lons = Series([x.GetPoint()[0] for x in geom])
+    lats = Series([x.GetPoint()[1] for x in geom])
+    
+    # get edges
+    minlon = lons.min()
+    minlat = lats.min()
+    maxlon = lons.max()
+    maxlat = lats.max()
     
     # create the frame cutting the outermost points
     frame = DataFrame(data=[[maxlon, maxlat], [maxlon, minlat], [minlon, minlat], [minlon, maxlat]], columns=['lon', 'lat'], index=['ur', 'dr', 'dl', 'ul'])
@@ -75,7 +86,56 @@ def get_edges(df, margins=None, relative=True, lon='lon', lat='lat'):
     return frame
 
 
+def dfToArray(DataFrame):
+    """
+    the DataFrame column 'geometry' will be converted to numpy.array
+    
+    @todo: include checks for data type, geometry type
+    @todo: inlcude output options
+    """
+    import numpy as np
+    
+    return np.asarray([[item.GetPoint()[0], item.GetPoint()[1]] for item in DataFrame.geometry])
 
+    
+def ArrayToPolygon(Array):
+    """
+    A OGR POLYGON Geometry is build from the given np.ndarray.
+    """
+    import numpy as np
+    from osgeo import ogr
+    
+    # check datatype
+    if not isinstance(Array, np.ndarray):
+        try:
+            Array = np.asanyarray(Array)
+        except:
+            raise TypeError("Array is not of type numpy.ndarray and cannot be casted.\n Type: {0}".format(Array.__class__))
+
+# TODO: handle passed lists    
+#    # check dimensions
+#    if Array.ndim == 2:
+#        Array = np.array(Array)
+#    if Array.ndim != 3:
+#        raise TypeError("Array hast to be of 2 or 3 dimensions, found {0}.".format(Array.ndim))
+    
+    # mindfuck
+    strings = []
+    # create point string in WKT style
+    for obj in Array:
+        strings.append(','.join(["{0} {1}".format(x[0], x[1]) for x in obj]))
+            
+    # create OGR POLYGON Geometry objects
+    polys = [ogr.CreateGeometryFromWkt("POLYGON (({0}))".format(x)) for x in strings]
+    
+    if len(polys) == 1:
+        return polys[0]
+    else:
+        return polys
+
+
+#### FROM HERE ON, ANYTHING WILL BE DELETED AT PUBLISHING ####
+#### THIS WAS DEVELOPMENT ONLY ####
 def rect_grid(edges, nrows=None, ncols=None, len_x=None, len_y=None, as_geometry=True, as_midpoints=False):
     """
     An rectengular grid of 4-point polygons is created within the 4 given 
@@ -88,6 +148,8 @@ def rect_grid(edges, nrows=None, ncols=None, len_x=None, len_y=None, as_geometry
     if nrows and len_y or ncols and len_x is given, len_x and len_y will be 
     used over nrows and ncols. If both are not given, 10 cells will be created 
     along the missing axis.
+    
+    @depracted
     """
     from pandas import DataFrame
     import numpy as np
@@ -143,42 +205,79 @@ def rect_grid(edges, nrows=None, ncols=None, len_x=None, len_y=None, as_geometry
 
     # zero point for grid is dl
     zero = (edges['lon']['dl'], edges['lat']['dl'])
+    
+    # check if numpy arrays or ogr geometries shall be returned:
+    if not as_geometry:
+        # usage of numpy arrays, either giving polgon midpoint or edge points
+        # iterate through all rows and columns, with i,j as indices
+        if not as_midpoints:
+            ### Create Grid Polygons ###
+            #grid = np.array([])    # numpy array as container for the resulting polygons
+            grid = np.ndarray((ncols * nrows,5,2))
+            #grid = []
+            
+            for j in range(nrows):
+                for i in range(ncols):
+                    # create dl, dr, ur, ul, dl as polygon
+                    poly = np.array([
+                                    [zero[0] + i * len_x, zero[1] + j * len_y],
+                                    [zero[0] + (i + 1) * len_x, zero[1] + j * len_y],
+                                    [zero[0] + (i + 1) * len_x, zero[1] + (j + 1) * len_y],
+                                    [zero[0] + i * len_x, zero[1] + (j + 1) * len_y],
+                                    [zero[0] + i * len_x, zero[1] + j * len_y]
+                                    ])
+                    # append poly to grid
+                    #grid = np.append(grid, poly)
+                    # the actual cell as created by iteration
+                    grid[(j * ncols + i),] = poly
+                    #grid.append(poly)
+    
+                    
+        else:
+            ### Create Grid Midpoints ###
+            grid = np.ndarray((ncols * nrows, 2))
+            # create midpoints
+            for j in range(nrows):
+                for i in range(ncols):
+                    # create midpoint
+                    point = [zero[0] + i * len_x + 0.5 * len_x, 
+                             zero[1] + j * len_y + 0.5 * len_y]
+                    #grid.append(point)
+                    grid[(j * ncols + i), ] = point
 
-    # iterate through all rows and columns, with i,j as indices
-    if not as_midpoints:
-        ### Create Grid Polygons ###
-        #grid = np.array([])    # numpy array as container for the resulting polygons
-        grid = np.ndarray((ncols * nrows,5,2))
-        #grid = []
-        
-        for j in range(nrows):
-            for i in range(ncols):
-                # create dl, dr, ur, ul, dl as polygon
-                poly = np.array([
-                                [zero[0] + i * len_x, zero[1] + j * len_y],
-                                [zero[0] + (i + 1) * len_x, zero[1] + j * len_y],
-                                [zero[0] + (i + 1) * len_x, zero[1] + (j + 1) * len_y],
-                                [zero[0] + i * len_x, zero[1] + (j + 1) * len_y],
-                                [zero[0] + i * len_x, zero[1] + j * len_y]
-                                ])
-                # append poly to grid
-                #grid = np.append(grid, poly)
-                # the actual cell as created by iteration
-                grid[(j * ncols + i),] = poly
-                #grid.append(poly)
-
-                
     else:
-        ### Create Grid Midpoints ###
-        grid = np.ndarray((ncols * nrows, 2))
-        # create midpoints
+        ### Create OGR Geometry Polygons ###
+        # load library
+        from osgeo import ogr
+        
+        # create container
+        #grid = np.ndarray(ncols * nrows)
+        grid = []
+        
+        # go for all polygon edge points
         for j in range(nrows):
             for i in range(ncols):
-                # create midpoint
-                point = [zero[0] + i * len_x + 0.5 * len_x, 
-                         zero[1] + j * len_y + 0.5 * len_y]
-                #grid.append(point)
-                grid[(j * ncols + i), ] = point
+                if not as_midpoints:
+                    ### Create Grid Polygons ###
+                    # create dl, dr, ur, ul, dl as polygon
+                    wkt = "POLYGON (({0} {1}, {2} {3}, {4} {5}, {6} {7}, {8} {9}))".format(
+                        zero[0] + i * len_x, zero[1] + j * len_y,
+                        zero[0] + (i + 1) * len_x, zero[1] + j * len_y,
+                        zero[0] + (i + 1) * len_x, zero[1] + (j + 1) * len_y,
+                        zero[0] + i * len_x, zero[1] + (j + 1) * len_y,
+                        zero[0] + i * len_x, zero[1] + j * len_y
+                    )
+                else:
+                    ### Create Grid Midpoints ###
+                    wkt = "POINT ({0} {1})".format(
+                        zero[0] + i * len_x + 0.5 * len_x,
+                        zero[1] + j * len_y + 0.5 * len_y
+                    )
+                
+                # create and append the OGR geometry
+                #grid[j * ncols + i] = ogr.CreateGeometryFromWkt(wkt)
+                grid.append(ogr.CreateGeometryFromWkt(wkt))
+        
                 
     
     ### Return ###
@@ -191,6 +290,8 @@ def rect_midpoint(rect, as_geometry=False):
     be given as numpy.ndarray of lists containg x and y for the dl, dr, up, ul 
     and dl edge points. 
     The midpoint is returned as tuple or OGR geometry.
+    
+    @depracted
     """
     import numpy as np
     

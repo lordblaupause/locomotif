@@ -3,4 +3,6 @@
 """
 
 from spatial import *
-from Grid import Grid
+#from Grid import Grid
+from Cluster import Cluster
+import voronoi 

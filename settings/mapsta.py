@@ -9,7 +9,7 @@ into LOCOMOTIF application (<http://locomotif.openhydro.org>).
 __version__ = '0.1'
 __author__ = 'Mirko Maelicke'
 
-import json, bisect, os
+import json, bisect, os, sys
 
 
 def get_csv_options(version=100, module='mapsta'):
@@ -33,6 +33,7 @@ def get_csv_options(version=100, module='mapsta'):
     
     # change path to file location
     os.chdir(os.path.dirname(__file__))
+#    os.chdir(os.path.dirname(os.path.realpath(sys.argv[0])))
     
     options = json.loads(open('%s_settings.json' % module, 'r').read())
     

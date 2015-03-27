@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 """
 """
+import pandas as pd
+import os
+from locomotif.spatial.Cluster import Cluster
+from osgeo import osr
 
-def read_csv(path, column_mapping=None, parse_ogr=False, **kwds):
+def read_csv(path, column_mapping=None, parse_ogr=True, **kwds):
     """
     Function wrapper for pandas.read_csv. path and kwds are passed to read_csv 
     and the resulting DataFrame will be returned. 
@@ -16,8 +20,7 @@ def read_csv(path, column_mapping=None, parse_ogr=False, **kwds):
     If parse_ogr is True, the lon and lat column will be replaced by a geom 
     column containing the OGR Geometry representing a point. This is needed in 
     case the df will be used as Cluster in an locomotif.Grid object.
-    """
-    import pandas as pd
+    """    
 
     # check if a predefined mapsta version was given
     # this would replace all other kwds
@@ -67,4 +70,40 @@ def read_csv(path, column_mapping=None, parse_ogr=False, **kwds):
         return df1
     else:
         return df
+    
+    
 
+def read_Cluster(path):
+    """
+    The given path has to be a folder containing the ref file as XML or TXT and 
+    one or more .pickle files containing the cluster DataFrames
+    """
+    if not os.path.exists(path) or not os.path.isdir(path):
+        raise TypeError("The given path ({0}) does not point to a valid folder".format(path))
+    
+    ### path is valid and a directory ###
+    # get all filenames
+    filenames = [f for f in os.listdir(path) if f.endswith('.pickle')]
+    
+    if os.path.exists(path + "/ref.wkt"):
+        ref = osr.SpatialReference()
+        ref.ImportFromWkt(open(path + "/ref.wkt", 'r').read())
+    elif os.path.exists(path + "/ref.xml"):
+        ref = osr.SpatialReference()
+        ref.ImportFromXML(open(path + "/ref.xml", 'r').read())
+    else:
+        ref = None
+    
+    # create a Cluster in debug mode
+    c = Cluster(SpatialReference=ref, debug=True) 
+    for f in filenames:
+        data = pd.read_pickle(path + "/" + f)
+        name = f.split('.')[0]
+        
+        # set Dataset
+        c._setDataset(data, name)
+    
+    # disable debug mode
+    c.setDebug(False)
+    
+    return c

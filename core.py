@@ -5,8 +5,16 @@
 __version__ = '0.1'
 __author__ = 'Mirko Maelicke'
 
-from spatial import *
+# import spatial complete
+import spatial
+# make Cluster available at parent level
+from spatial import Cluster
 
-from IOstream.ImportStream import read_csv
+
+from IOstream.ImportStream import read_csv, read_Cluster
+
+from IOstream.ExportStream import saveCluster
+
+
 
 import settings
