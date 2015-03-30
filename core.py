@@ -13,7 +13,7 @@ from spatial import Cluster
 
 from IOstream.ImportStream import read_csv, read_Cluster
 
-from IOstream.ExportStream import saveCluster
+from IOstream.ExportStream import saveCluster, exportShp
 
 
 

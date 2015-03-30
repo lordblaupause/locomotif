@@ -4,7 +4,9 @@ Created on Fri Mar 27 11:45:06 2015
 
 @author: maelicke
 """
-import os, shutil
+import os, shutil, locomotif
+from osgeo import ogr
+import pandas as pd
 
 def saveCluster(Cluster, path, xml=False, overwrite=False):
     """
@@ -50,7 +52,31 @@ def saveCluster(Cluster, path, xml=False, overwrite=False):
     fs.close()
     
     
-def ExportShp(Dataframe, SpatialReference, **kwargs):
+def exportShp(Object, path, SpatialReference=None, name=None):
     """
+    Wrapper for Filehandler. 
+    Export result DataFrame of voronoi or delaunay function, or Cluster 
+    attributes to ESRI Shapefile.
     """
-    pass
+    from FileHandler import FileHandler
+    
+    ### check Object class ###
+    # Object is a locomotif.Cluster
+    if isinstance(Object, locomotif.Cluster):
+        SpatialReference = Object.getSpatialReference()
+        # get the data
+        data = Object.getDatasets(objects=True)
+    
+    # Object is a pandas.DataFrame
+    elif isinstance(Object, pd.DataFrame):
+        if name is not None:
+            data = {name:Object}
+        else: 
+            data = {'locExportShp':Object}
+    else:
+        raise TypeError("Object has to be of type locomotif.Cluster or pandas.DataFrame, found {0}".format(Object.__class__))
+        
+    ## create shapefiles
+    for dataset in data:
+        FileHandler(path, data[dataset], SpatialReference, name=dataset)
+    
