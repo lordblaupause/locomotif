@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE Map>
+
+<Map background-color="ghostwhite" srs="+proj=latlong +datum=WGS84">
+	<Style name="Default">
+		<Rule>
+			<PolygonSymbolizer fill="steelblue"/>
+			<LineSymbolizer stroke="gray" stroke-width="0.8"/>
+		</Rule>
+	</Style>
+</Map>

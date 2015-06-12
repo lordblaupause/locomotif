@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE Map>
+
+<Map background-color="lightblue" srs="+proj=latlong +datum=WGS84">
+	<Style name="Default">
+		<Rule name="Line">
+			<LineSymbolizer stroke="ghostwhite" stroke-width="2"/>
+		</Rule>
+		<Rule name="Labels">
+			<TextSymbolizer face-name="DejaVu Sans Book" size="16" fill="yellow" halo-fill= "black" halo-radius="2.5" placement="interior" allow-overlap="false">[value]</TextSymbolizer>
+		</Rule>
+
+		<Rule name="step1">
+                 <Filter>[value]&gt;=0 and [value]&lt;10</Filter>
+			<PolygonSymbolizer fill="#C21700" fill-opacity="0.5" />
+		</Rule>
+		<Rule name="step2">
+                 <Filter>[value]&gt;=10 and [value]&lt;20</Filter>
+			<PolygonSymbolizer fill="#C64300" fill-opacity="0.5" />
+		</Rule>
+		<Rule name="step3">
+                 <Filter>[value]&gt;=20 and [value]&lt;30</Filter>
+			<PolygonSymbolizer fill="#CA7000" fill-opacity="0.5" />
+		</Rule>
+		<Rule name="step4">
+                 <Filter>[value]&gt;=30 and [value]&lt;40</Filter>
+			<PolygonSymbolizer fill="#CE9F00" fill-opacity="0.5" />
+		</Rule>
+		<Rule name="step5">
+                 <Filter>[value]&gt;=40 and [value]&lt;50</Filter>
+			<PolygonSymbolizer fill="#D2CF00" fill-opacity="0.5" />
+		</Rule>
+		<Rule name="step6">
+                 <Filter>[value]&gt;=50 and [value]&lt;60</Filter>
+			<PolygonSymbolizer fill="#A9D500" fill-opacity="0.5" />
+		</Rule>
+		<Rule name="step7">
+                 <Filter>[value]&gt;=60 and [value]&lt;70</Filter>
+			<PolygonSymbolizer fill="#7DD900" fill-opacity="0.5" />
+		</Rule>
+		<Rule name="step8">
+                 <Filter>[value]&gt;=70 and [value]&lt;80</Filter>
+			<PolygonSymbolizer fill="#4FDD00" fill-opacity="0.5" />
+		</Rule>
+		<Rule name="step9">
+                 <Filter>[value]&gt;=80 and [value]&lt;90</Filter>
+			<PolygonSymbolizer fill="#20E100" fill-opacity="0.5" />
+		</Rule>
+		<Rule name="step10">
+                 <Filter>[value]&gt;=90 and [value]&lt;100</Filter>
+			<PolygonSymbolizer fill="#00E510" fill-opacity="0.5" />
+		</Rule>
+	</Style>
+</Map>

@@ -10,6 +10,9 @@ import spatial
 # make Cluster available at parent level
 from spatial import Cluster
 
+# make Mapper available at parent level
+from mapper import Mapper
+
 
 from IOstream.ImportStream import read_csv, read_Cluster
 
