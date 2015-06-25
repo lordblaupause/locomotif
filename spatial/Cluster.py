@@ -159,6 +159,45 @@ class Cluster(object):
         self.datasets.append(name)
         
 
+    def model(self, func, clusters, as_list=True, inplace=False, **kwargs):
+        """
+        One or more cluster layer can be calculated to a new cluster layer using 
+        the funciton given as func. The function result will be returned.
+        This function has to accept the clusters and **kwargs, if set, as attributes.
+        the clusters are passed either as list, or as **cluster, like:
+        clustername=cluster.
+        """
+        # check if func is callable
+        if not hasattr(func, '__call__'):
+            raise AttributeError('func is not callable')
+        
+        # check if clusters is a str or list of str
+        if isinstance(clusters, str):
+            clusters = [clusters]
+        if isinstance(clusters, list):
+            if not all([isinstance(item, str) for item in clusters]):
+                raise AttributeError("clsuters has to be either a string or list of strings identifying all cluster layers to be used.")
+        
+        # load all clusters
+        if as_list:
+            data = [self.getDataset(cluster) for cluster in clusters]
+        else:
+            data = {cluster:self.getDataset(cluster) for cluster in clusters}
+        
+        # call the function
+        if as_list:
+            out = func(data, **kwargs)
+        else:
+            attr = data.update(kwargs)
+            out = func(**attr)
+        
+        if inplace:
+            self.setDebug(True)
+            self._setDataset(out, func.__name__)
+            self.setDebug(False)
+        else:
+            return out
+
     
     def delaunay(self, cluster, func='mean'):
         """
